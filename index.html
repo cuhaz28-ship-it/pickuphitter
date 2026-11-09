@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>홈런! 랜덤 번호 뽑기 ⚾</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Gowun Dodum', sans-serif;
+            background-color: #f2f9f1;
+            background-image: 
+                radial-gradient(#ccead0 2px, transparent 2px),
+                linear-gradient(to bottom, #eef7ff 0%, #f2f9f1 100%);
+            background-size: 24px 24px, 100% 100%;
+        }
+
+        .title-font {
+            font-family: 'Jua', sans-serif;
+        }
+
+        .pastel-card {
+            background: #ffffff;
+            border: 4px solid #d4ecd5;
+            box-shadow: 0 10px 25px -5px rgba(135, 192, 142, 0.25);
+            border-radius: 2rem;
+        }
+
+        .btn-baseball {
+            background: linear-gradient(135deg, #ff8a80 0%, #ff5252 100%);
+            box-shadow: 0 8px 0 #c62828;
+            transition: all 0.1s ease;
+        }
+
+        .btn-baseball:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 0 #c62828;
+        }
+
+        .btn-baseball:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #c62828;
+        }
+
+        .btn-secondary-pastel {
+            background: #e1f5fe;
+            color: #0277bd;
+            box-shadow: 0 4px 0 #81d4fa;
+        }
+        .btn-secondary-pastel:hover {
+            background: #b3e5fc;
+        }
+
+        /* Baseball Ball Design with Stitches */
+        .baseball-ball {
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f0f0f0 70%, #dcdcdc 100%);
+            border: 5px solid #d4d4d4;
+            box-shadow: inset -8px -8px 15px rgba(0,0,0,0.1), 0 15px 30px rgba(0,0,0,0.15);
+            position: relative;
+        }
+        /* Red stitches styling */
+        .baseball-ball::before, .baseball-ball::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 3px dashed #e53935;
+            top: 0; left: 0;
+            pointer-events: none;
+        }
+        .baseball-ball::before {
+            clip-path: ellipse(30% 85% at 0% 50%);
+        }
+        .baseball-ball::after {
+            clip-path: ellipse(30% 85% at 100% 50%);
+        }
+
+        /* SVG Batter Pitch & Swing Keyframe Animations */
+        @keyframes batterIdle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(-2deg); }
+        }
+        .animate-batter-idle {
+            animation: batterIdle 1.8s infinite ease-in-out;
+            transform-origin: bottom center;
+        }
+
+        @keyframes batSwing {
+            0% { transform: rotate(0deg); }
+            30% { transform: rotate(-25deg); }
+            60% { transform: rotate(100deg); }
+            100% { transform: rotate(0deg); }
+        }
+        .animate-swing {
+            animation: batSwing 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: 30px 65px;
+        }
+
+        @keyframes pitchBall {
+            0% { transform: translate(-220px, -100px) scale(0.3); opacity: 0; }
+            30% { opacity: 1; }
+            70% { transform: translate(-30px, -10px) scale(0.8); }
+            100% { transform: translate(180px, -250px) scale(2.2); opacity: 1; }
+        }
+        .animate-pitch-ball {
+            animation: pitchBall 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes homerunZoom {
+            0% { transform: scale(0.1) rotate(-360deg); opacity: 0; }
+            60% { transform: scale(1.2) rotate(15deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .animate-homerun-pop {
+            animation: homerunZoom 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #a5d6a7;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 sm:p-6 md:p-8 text-slate-700">
+
+    <!-- Header Section -->
+    <header class="max-w-4xl mx-auto w-full text-center mb-4">
+        <div class="inline-block bg-emerald-100 text-emerald-700 font-bold px-4 py-1.5 rounded-full text-sm mb-2 shadow-sm border border-emerald-200">
+            <i class="fa-solid fa-baseball-bat-ball mr-1"></i> 신나는 우리 반 클래스 스윗홈런
+        </div>
+        <h1 class="title-font text-4xl sm:text-5xl md:text-6xl text-emerald-800 tracking-wide drop-shadow-sm flex items-center justify-center gap-3">
+            <span>⚾</span> 홈런! 번호 뽑기 <span>🏆</span>
+        </h1>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto w-full flex-1 flex flex-col gap-6">
+
+        <!-- Controls Card (Top Settings) -->
+        <div class="pastel-card p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-emerald-100">
+            <!-- Student Count Input -->
+            <div class="flex items-center gap-3 bg-emerald-50 px-4 py-2.5 rounded-2xl border border-emerald-200">
+                <label for="maxStudents" class="font-bold text-base sm:text-lg text-emerald-900 flex items-center gap-1.5">
+                    <i class="fa-solid fa-users text-emerald-600"></i> 전체 학생 수:
+                </label>
+                <div class="flex items-center gap-1">
+                    <input type="number" id="maxStudents" min="1" max="35" value="30" 
+                           class="w-16 text-center text-xl font-bold bg-white text-emerald-900 border-2 border-emerald-300 rounded-xl py-1 focus:outline-none focus:border-emerald-500 transition-all shadow-inner">
+                    <span class="text-gray-500 font-bold">명</span>
+                </div>
+            </div>
+
+            <!-- Checkbox & Reset Button Group -->
+            <div class="flex items-center gap-4 flex-wrap">
+                <!-- Exclude Duplicate Checkbox -->
+                <label class="flex items-center gap-2 cursor-pointer bg-amber-50 hover:bg-amber-100 px-4 py-2.5 rounded-2xl border border-amber-200 transition-colors select-none">
+                    <input type="checkbox" id="excludeDuplicate" checked 
+                           class="w-5 h-5 accent-red-500 rounded cursor-pointer">
+                    <span class="font-bold text-amber-900 text-sm sm:text-base">
+                        <i class="fa-solid fa-ban text-amber-500 mr-1"></i>중복 제외
+                    </span>
+                </label>
+
+                <!-- Reset Button -->
+                <button id="resetBtn" onclick="resetPicker()" 
+                        class="btn-secondary-pastel px-4 py-2.5 rounded-2xl font-bold text-sm sm:text-base flex items-center gap-1.5 transition-transform active:scale-95">
+                    <i class="fa-solid fa-rotate-right"></i> 기록 초기화
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Baseball Field / Pitching & Swinging Arena -->
+        <div class="pastel-card p-6 sm:p-8 flex flex-col items-center justify-between text-center relative overflow-hidden min-h-[420px] bg-gradient-to-b from-sky-100 via-sky-50 to-emerald-50 border-emerald-200">
+            
+            <!-- Stadium Grass & Base Graphic Decoration -->
+            <div class="absolute bottom-0 left-0 right-0 h-32 bg-emerald-200/50 rounded-b-3xl border-t-4 border-emerald-300/40 pointer-events-none"></div>
+            <!-- Home Base SVG Plate -->
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-24 h-12 bg-white border-2 border-gray-300 rounded-b-md shadow-sm opacity-80 pointer-events-none flex items-center justify-center">
+                <span class="text-xs font-black text-gray-300">HOME</span>
+            </div>
+
+            <!-- Impact FX Banner Text (HIT! / HOMERUN!) -->
+            <div id="impactText" class="absolute top-8 z-20 title-font text-3xl sm:text-5xl text-amber-500 tracking-wider drop-shadow-lg opacity-0 transition-all duration-300">
+                ⚡ HOMERUN!! ⚡
+            </div>
+
+            <!-- Central Scene Container (Batter + Ball + Winner Display) -->
+            <div class="relative w-full flex-1 flex items-center justify-center z-10 my-2">
+                
+                <!-- Flying Pitcher Ball (Animated via JS) -->
+                <div id="flyingBall" class="hidden absolute left-1/2 top-1/2 w-10 h-10 bg-white rounded-full border-2 border-gray-300 shadow-md z-30 flex items-center justify-center">
+                    <div class="w-full h-full rounded-full border-2 border-dashed border-red-500 opacity-70"></div>
+                </div>
+
+                <!-- Cute Baseball Batter Graphic (SVG) -->
+                <div id="batterWrapper" class="relative z-10 transition-transform duration-300 animate-batter-idle">
+                    <svg width="180" height="200" viewBox="0 0 180 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Shadow -->
+                        <ellipse cx="90" cy="185" rx="45" ry="10" fill="#000" fill-opacity="0.15" />
+                        
+                        <!-- Body & Jersey -->
+                        <path d="M60 110 Q90 100 120 110 L115 160 H65 Z" fill="#ffffff" stroke="#334155" stroke-width="4"/>
+                        <path d="M75 110 V160 M105 110 V160" stroke="#ef4444" stroke-width="3" stroke-dasharray="4 4"/>
+                        <!-- Belt & Pants -->
+                        <rect x="65" y="155" width="50" height="8" fill="#334155" rx="2"/>
+                        <path d="M68 163 L75 185 H85 L83 163 Z" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+                        <path d="M112 163 L105 185 H95 L97 163 Z" fill="#ffffff" stroke="#334155" stroke-width="3"/>
+
+                        <!-- Arms & Hands holding Bat -->
+                        <path d="M55 120 Q70 130 85 125" stroke="#fbcfe8" stroke-width="12" stroke-linecap="round"/>
+                        <path d="M125 120 Q110 130 95 125" stroke="#fbcfe8" stroke-width="12" stroke-linecap="round"/>
+                        
+                        <!-- Head & Cap -->
+                        <circle cx="90" cy="75" r="30" fill="#fbcfe8"/> <!-- Face -->
+                        <!-- Cute Face Features -->
+                        <circle cx="80" cy="75" r="3.5" fill="#1e293b"/> <!-- Left Eye -->
+                        <circle cx="100" cy="75" r="3.5" fill="#1e293b"/> <!-- Right Eye -->
+                        <path d="M86 84 Q90 88 94 84" stroke="#1e293b" stroke-width="3" stroke-linecap="round" fill="none"/> <!-- Smile -->
+                        <ellipse cx="73" cy="80" rx="4" ry="2.5" fill="#f43f5e" opacity="0.6"/> <!-- Blush -->
+                        <ellipse cx="107" cy="80" rx="4" ry="2.5" fill="#f43f5e" opacity="0.6"/>
+
+                        <!-- Baseball Cap -->
+                        <path d="M60 70 C60 50 120 50 120 70 Z" fill="#ef4444"/>
+                        <path d="M90 70 L135 65" stroke="#ef4444" stroke-width="7" stroke-linecap="round"/> <!-- Visor -->
+                        <circle cx="90" cy="50" r="4" fill="#ffffff"/>
+
+                        <!-- Bat Group (Rotated on Swing) -->
+                        <g id="batGroup" class="transition-transform">
+                            <!-- Wooden Bat -->
+                            <path d="M90 125 L150 40 Q155 33 162 38 Q167 44 160 50 L95 130 Z" fill="#d97706" stroke="#78350f" stroke-width="3"/>
+                            <rect x="88" y="122" width="12" height="12" rx="3" fill="#451a03" transform="rotate(-40 88 122)"/>
+                        </g>
+                    </svg>
+                </div>
+
+                <!-- Big Result Baseball Ball (Hidden initially, shown after swing) -->
+                <div id="resultBallWrapper" class="hidden absolute z-30 flex flex-col items-center justify-center">
+                    <div id="resultBall" class="baseball-ball w-52 h-52 sm:w-64 sm:h-64 rounded-full flex flex-col items-center justify-center animate-homerun-pop">
+                        <span class="text-xs sm:text-sm font-black text-red-500 uppercase tracking-widest mb-1">HOMERUN!</span>
+                        <span id="randomNumber" class="title-font text-7xl sm:text-8xl font-black text-slate-800 tracking-tighter drop-shadow-md">
+                            ?
+                        </span>
+                        <span id="studentLabel" class="text-xs sm:text-sm font-bold text-gray-500 mt-1">번 학생</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Status Guidance Text -->
+            <p id="statusText" class="z-10 text-emerald-700 font-bold text-base sm:text-lg mb-2">
+                스윙 버튼을 눌러 홈런 번호를 뽑아보세요! ⚾
+            </p>
+
+            <!-- Swing Main Button -->
+            <button id="drawBtn" onclick="swingBat()" 
+                    class="btn-baseball text-white title-font text-2xl sm:text-3xl px-10 py-4 sm:py-5 rounded-3xl w-full max-w-xs flex items-center justify-center gap-3 tracking-wide z-20 select-none">
+                <i class="fa-solid fa-baseball-bat-ball text-2xl sm:text-3xl"></i>
+                <span>스윙 (Swing!)</span>
+            </button>
+        </div>
+
+        <!-- History Record Card -->
+        <div class="pastel-card p-5 sm:p-6 border-emerald-100">
+            <div class="flex items-center justify-between border-b-2 border-dashed border-emerald-100 pb-3 mb-4">
+                <h2 class="title-font text-xl sm:text-2xl text-emerald-900 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-500"></i>
+                    <span>홈런 히트 목록</span>
+                </h2>
+                <span id="historyCount" class="bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full text-xs sm:text-sm">
+                    총 0명 / 30명
+                </span>
+            </div>
+
+            <!-- Baseball Badges List -->
+            <div id="historyList" class="flex flex-wrap gap-2.5 sm:gap-3 max-h-40 overflow-y-auto p-1 custom-scrollbar min-h-[50px] items-center">
+                <p id="emptyHistoryMsg" class="text-gray-400 text-sm w-full text-center py-2">
+                    아직 타석에 들어선 번호가 없어요 ⚾
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Toast Message Notification -->
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 translate-y-[-150%] opacity-0 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-3 font-bold text-base pointer-events-none transition-all duration-300">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-yellow-400 text-xl"></i>
+        <span id="toastMsg">메시지 내용</span>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-6 text-center text-xs sm:text-sm text-emerald-600 font-bold">
+        ⚾ 신나는 교실 수업용 야구 스윙 번호 뽑기 ⚾
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        // State
+        let drawnNumbers = [];
+        let isAnimating = false;
+
+        // DOM elements
+        const maxStudentsInput = document.getElementById('maxStudents');
+        const excludeDuplicateCheck = document.getElementById('excludeDuplicate');
+        const randomNumberEl = document.getElementById('randomNumber');
+        const resultBallWrapper = document.getElementById('resultBallWrapper');
+        const resultBall = document.getElementById('resultBall');
+        const batterWrapper = document.getElementById('batterWrapper');
+        const batGroup = document.getElementById('batGroup');
+        const flyingBall = document.getElementById('flyingBall');
+        const impactText = document.getElementById('impactText');
+        const statusText = document.getElementById('statusText');
+        const drawBtn = document.getElementById('drawBtn');
+        const historyList = document.getElementById('historyList');
+        const historyCount = document.getElementById('historyCount');
+        const emptyHistoryMsg = document.getElementById('emptyHistoryMsg');
+
+        // Input validation
+        maxStudentsInput.addEventListener('change', () => {
+            let val = parseInt(maxStudentsInput.value);
+            if (isNaN(val) || val < 1) val = 1;
+            if (val > 35) {
+                val = 35;
+                showToast("최대 35명까지만 설정할 수 있습니다!", "fa-triangle-exclamation");
+            }
+            maxStudentsInput.value = val;
+            updateCountDisplay();
+        });
+
+        function updateCountDisplay() {
+            const max = parseInt(maxStudentsInput.value) || 30;
+            historyCount.innerText = `총 ${drawnNumbers.length}명 / ${max}명`;
+        }
+
+        // Main Swing & Draw Function
+        function swingBat() {
+            if (isAnimating) return;
+
+            const maxStudents = parseInt(maxStudentsInput.value) || 30;
+            const excludeDuplicate = excludeDuplicateCheck.checked;
+
+            // Check if all numbers are drawn
+            if (excludeDuplicate && drawnNumbers.length >= maxStudents) {
+                showToast("🎉 모든 학생 번호가 뽑혔습니다! 리셋 후 다시 이용해 주세요.", "fa-trophy");
+                statusText.innerText = "모든 타석이 완료되었습니다! 🏆";
+                triggerConfetti();
+                return;
+            }
+
+            isAnimating = true;
+            drawBtn.disabled = true;
+            drawBtn.classList.add('opacity-70', 'cursor-not-allowed');
+
+            // Hide old result ball & Reset Batter State
+            resultBallWrapper.classList.add('hidden');
+            batterWrapper.classList.remove('hidden');
+            impactText.classList.add('opacity-0');
+            impactText.classList.remove('scale-125', 'opacity-100');
+            statusText.innerText = "투수 와인드업... 볼이 날아옵니다! ⚾";
+
+            // 1. Pitch Ball Animation Start
+            flyingBall.classList.remove('hidden', 'animate-pitch-ball');
+            // Force Reflow
+            void flyingBall.offsetWidth;
+            flyingBall.classList.add('animate-pitch-ball');
+
+            // 2. Batter Swing Timing (At 500ms when ball reaches home plate)
+            setTimeout(() => {
+                batGroup.classList.add('animate-swing');
+                statusText.innerText = "풀 스윙! 타격!!! 💥";
+            }, 450);
+
+            // 3. Impact Hit & Reveal (At 750ms)
+            setTimeout(() => {
+                // Play visual impact
+                impactText.innerText = Math.random() > 0.3 ? "⚡ HOMERUN!! ⚡" : "🔥 GREAT HIT!! 🔥";
+                impactText.classList.remove('opacity-0');
+                impactText.classList.add('opacity-100', 'scale-125');
+
+                // Hide Pitching Ball & Batter
+                flyingBall.classList.add('hidden');
+                batterWrapper.classList.add('hidden');
+
+                // Determine Random Winner Number
+                let finalNumber;
+                if (excludeDuplicate) {
+                    const available = [];
+                    for (let i = 1; i <= maxStudents; i++) {
+                        if (!drawnNumbers.includes(i)) available.push(i);
+                    }
+                    finalNumber = available[Math.floor(Math.random() * available.length)];
+                } else {
+                    finalNumber = Math.floor(Math.random() * maxStudents) + 1;
+                }
+
+                drawnNumbers.push(finalNumber);
+
+                // Reveal Result Baseball Ball
+                randomNumberEl.innerText = finalNumber;
+                resultBallWrapper.classList.remove('hidden');
+                resultBall.classList.remove('animate-homerun-pop');
+                void resultBall.offsetWidth; // Reflow
+                resultBall.classList.add('animate-homerun-pop');
+
+                statusText.innerText = `🎉 홈런! 당첨 번호는 ${finalNumber}번 학생입니다! 🎉`;
+
+                // Confetti & History Badge
+                triggerConfetti();
+                addHistoryBadge(finalNumber);
+                updateCountDisplay();
+
+            }, 750);
+
+            // 4. Enable Button after total animation finishes
+            setTimeout(() => {
+                batGroup.classList.remove('animate-swing');
+                isAnimating = false;
+                drawBtn.disabled = false;
+                drawBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+            }, 1600);
+        }
+
+        // Add history item with baseball badge style
+        function addHistoryBadge(number) {
+            if (emptyHistoryMsg) {
+                emptyHistoryMsg.style.display = 'none';
+            }
+
+            const turnOrder = drawnNumbers.length;
+            const badge = document.createElement('div');
+            badge.className = `bg-white text-slate-800 border-2 border-emerald-300 font-bold px-3 py-1.5 rounded-full text-base sm:text-lg flex items-center gap-1.5 shadow-sm transform transition-all duration-300 scale-0 animate-homerun-pop`;
+            
+            badge.innerHTML = `
+                <span class="w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs flex items-center justify-center font-black">⚾</span>
+                <span class="text-xs text-emerald-600 font-extrabold">#${turnOrder}</span>
+                <span class="text-emerald-900">${number}번</span>
+            `;
+
+            historyList.appendChild(badge);
+            historyList.scrollTop = historyList.scrollHeight;
+        }
+
+        // Reset All
+        function resetPicker() {
+            if (isAnimating) return;
+
+            drawnNumbers = [];
+            resultBallWrapper.classList.add('hidden');
+            batterWrapper.classList.remove('hidden');
+            impactText.classList.add('opacity-0');
+            statusText.innerText = '스윙 버튼을 눌러 홈런 번호를 뽑아보세요! ⚾';
+
+            historyList.innerHTML = `
+                <p id="emptyHistoryMsg" class="text-gray-400 text-sm w-full text-center py-2">
+                    아직 타석에 들어선 번호가 없어요 ⚾
+                </p>
+            `;
+
+            updateCountDisplay();
+            showToast("모든 홈런 기록이 초기화되었습니다!", "fa-rotate-right");
+        }
+
+        // Confetti Fireworks
+        function triggerConfetti() {
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 90,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#4ade80', '#60a5fa', '#f87171', '#facc15', '#fb923c']
+                });
+            }
+        }
+
+        // Toast Helper
+        function showToast(message, iconClass = "fa-circle-info") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            toastIcon.className = `fa-solid ${iconClass} text-yellow-400 text-xl`;
+
+            toast.classList.remove('translate-y-[-150%]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-150%]', 'opacity-0');
+            }, 2500);
+        }
+
+        // Init
+        window.onload = function() {
+            updateCountDisplay();
+        };
+    </script>
+</body>
+</html>
